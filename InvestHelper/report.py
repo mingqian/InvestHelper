@@ -105,7 +105,7 @@ def generate_report(products):
         ws[f'H{2 + i}'] = p['baseline']
         ws[f'I{2 + i}'] = p['stocks_pct']
         ws[f'J{2 + i}'] = p['bonds_pct']
-    tab = table.Table(displayName='RunningProducts', ref=f'A1:G{len(products) + 1}')  # header uses line 1
+    tab = table.Table(displayName='RunningProducts', ref=f'A1:J{len(products) + 1}')  # header uses line 1
     ws.column_dimensions['A'].width = 20
     ws.column_dimensions['B'].width = 40
     ws.column_dimensions['C'].width = 20
