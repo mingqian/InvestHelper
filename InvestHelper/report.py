@@ -2,7 +2,7 @@ from string import ascii_uppercase
 from datetime import datetime as dt
 from openpyxl import Workbook
 from openpyxl.worksheet import table
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font, PatternFill, numbers
 import scipy.optimize
 from language import lang
 from investment import Investment
@@ -106,7 +106,7 @@ def generate_report(products):
             ws_ended[f'E{2 + ws_ended_row}'] = value
             ws_ended[f'F{2 + ws_ended_row}'] = profit
             cell = f'G{2 + ws_ended_row}'
-            ws_ended[cell] = f'{irr:.2%}'
+            ws_ended[cell] = irr
             ws_ended[cell].font = Font(bold=True)
             ws_ended[cell].fill = PatternFill(fill_type='solid', fgColor=irr_color(irr))
             ws_ended[f'H{2 + ws_ended_row}'] = p['baseline']
@@ -121,7 +121,7 @@ def generate_report(products):
             ws[f'E{2 + ws_row}'] = value
             ws[f'F{2 + ws_row}'] = profit
             cell = f'G{2 + ws_row}'
-            ws[cell] = f'{irr:.2%}'
+            ws[cell] = irr
             ws[cell].font = Font(bold=True)
             ws[cell].fill = PatternFill(fill_type='solid', fgColor=irr_color(irr))
             ws[f'H{2 + ws_row}'] = p['baseline']
@@ -151,6 +151,12 @@ def generate_report(products):
     ws_ended.column_dimensions['H'].width = 20
     ws_ended.column_dimensions['I'].width = 10
     ws_ended.column_dimensions['J'].width = 15
+
+    for cell in ws['G']:
+        cell.number_format = numbers.FORMAT_PERCENTAGE_00
+
+    for cell in ws_ended['G']:
+        cell.number_format = numbers.FORMAT_PERCENTAGE_00
 
     ws.add_table(tab)
     ws_ended.add_table(tab_ended)
