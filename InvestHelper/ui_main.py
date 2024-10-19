@@ -26,7 +26,7 @@ def show_main_window():
     if products is None:
         plist = []
     else:
-        plist = [[x['id'], x['name'], x['last_update']] for x in products]
+        plist = [[x['id'], x['name'], x['last_update']] for x in products if float(x['share']) > 0.0]
 
     headings = [lang['Code'], lang['Name'], lang['Last Update']]
     colwidth = [16, 40, 16]
@@ -82,7 +82,7 @@ def show_main_window():
 
         if result == 'Refresh' or event == 'Refresh':
             products = investment.fetch_products()
-            plist = [[x['id'], x['name'], x['last_update']] for x in products]
+            plist = [[x['id'], x['name'], x['last_update']] for x in products if float(x['share']) > 0.0]
             result = refresh_window(window, plist)
 
     window.close()
