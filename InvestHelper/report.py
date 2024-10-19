@@ -89,23 +89,47 @@ def generate_report_header(ws):
 def generate_report(products):
     wb = Workbook()
     ws = wb.active
+    ws.title = 'Running Products'
+    ws_ended = wb.create_sheet(title='Ended Products')
+
     generate_report_header(ws)
-    for i, p in enumerate(products):
+    generate_report_header(ws_ended)
+    ws_row = 0
+    ws_ended_row = 0
+    for p in products:
         value, profit, irr = calc_financials(p)
-        ws[f'A{2 + i}'] = p['id']
-        ws[f'B{2 + i}'] = p['name']
-        ws[f'C{2 + i}'] = p['first_due']
-        ws[f'D{2 + i}'] = p['capital']
-        ws[f'E{2 + i}'] = value
-        ws[f'F{2 + i}'] = profit
-        cell = f'G{2 + i}'
-        ws[cell] = f'{irr:.2%}'
-        ws[cell].font = Font(bold=True)
-        ws[cell].fill = PatternFill(fill_type='solid', fgColor=irr_color(irr))
-        ws[f'H{2 + i}'] = p['baseline']
-        ws[f'I{2 + i}'] = p['stocks_pct']
-        ws[f'J{2 + i}'] = p['bonds_pct']
-    tab = table.Table(displayName='RunningProducts', ref=f'A1:J{len(products) + 1}')  # header uses line 1
+        if float(p['share']) == 0.0:
+            ws_ended[f'A{2 + ws_ended_row}'] = p['id']
+            ws_ended[f'B{2 + ws_ended_row}'] = p['name']
+            ws_ended[f'C{2 + ws_ended_row}'] = p['first_due']
+            ws_ended[f'D{2 + ws_ended_row}'] = p['capital']
+            ws_ended[f'E{2 + ws_ended_row}'] = value
+            ws_ended[f'F{2 + ws_ended_row}'] = profit
+            cell = f'G{2 + ws_ended_row}'
+            ws_ended[cell] = f'{irr:.2%}'
+            ws_ended[cell].font = Font(bold=True)
+            ws_ended[cell].fill = PatternFill(fill_type='solid', fgColor=irr_color(irr))
+            ws_ended[f'H{2 + ws_ended_row}'] = p['baseline']
+            ws_ended[f'I{2 + ws_ended_row}'] = p['stocks_pct']
+            ws_ended[f'J{2 + ws_ended_row}'] = p['bonds_pct']
+            ws_ended_row += 1
+        else:
+            ws[f'A{2 + ws_row}'] = p['id']
+            ws[f'B{2 + ws_row}'] = p['name']
+            ws[f'C{2 + ws_row}'] = p['first_due']
+            ws[f'D{2 + ws_row}'] = p['capital']
+            ws[f'E{2 + ws_row}'] = value
+            ws[f'F{2 + ws_row}'] = profit
+            cell = f'G{2 + ws_row}'
+            ws[cell] = f'{irr:.2%}'
+            ws[cell].font = Font(bold=True)
+            ws[cell].fill = PatternFill(fill_type='solid', fgColor=irr_color(irr))
+            ws[f'H{2 + ws_row}'] = p['baseline']
+            ws[f'I{2 + ws_row}'] = p['stocks_pct']
+            ws[f'J{2 + ws_row}'] = p['bonds_pct']
+            ws_row += 1
+    tab = table.Table(displayName='RunningProducts', ref=f'A1:J{ws_row + 1}')  # header uses line 1
+    tab_ended = table.Table(displayName='EndedProducts', ref=f'A1:J{ws_ended_row + 1}')  # header uses line 1
     ws.column_dimensions['A'].width = 20
     ws.column_dimensions['B'].width = 40
     ws.column_dimensions['C'].width = 20
@@ -116,6 +140,19 @@ def generate_report(products):
     ws.column_dimensions['H'].width = 20
     ws.column_dimensions['I'].width = 10
     ws.column_dimensions['J'].width = 15
+
+    ws_ended.column_dimensions['A'].width = 20
+    ws_ended.column_dimensions['B'].width = 40
+    ws_ended.column_dimensions['C'].width = 20
+    ws_ended.column_dimensions['D'].width = 15
+    ws_ended.column_dimensions['E'].width = 15
+    ws_ended.column_dimensions['F'].width = 15
+    ws_ended.column_dimensions['G'].width = 10
+    ws_ended.column_dimensions['H'].width = 20
+    ws_ended.column_dimensions['I'].width = 10
+    ws_ended.column_dimensions['J'].width = 15
+
     ws.add_table(tab)
-    ws.title = 'Running Products'
+    ws_ended.add_table(tab_ended)
+
     wb.save(f'Report_{dt.now().strftime("%Y-%m-%d")}.xlsx')
