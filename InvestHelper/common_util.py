@@ -1,5 +1,7 @@
+import queue
 from datetime import datetime as dt
 
+event_queue = queue.Queue()
 
 def compare_date_str(x, y) -> bool:
     """

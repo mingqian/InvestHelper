@@ -5,6 +5,7 @@ from ui_subscription import show_subscription_window
 from ui_redemption import show_redemption_window
 from ui_dividend import show_dividend_window
 from investment import Investment
+from common_util import event_queue
 
 
 def update_color(window, history):
@@ -29,7 +30,7 @@ def refresh_window(window, product, history):
     update_color(window['History'], history)
 
 
-def show_product_window(product) -> str:
+def show_product_window(product):
     code = product['id']
     investment = Investment('money.db')
     history = investment.fetch_history(code)
@@ -108,5 +109,5 @@ def show_product_window(product) -> str:
             history = investment.fetch_history(code)
             refresh_window(window, product, history)
 
+    event_queue.put('Refresh')
     window.close()
-    return result

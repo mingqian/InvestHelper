@@ -1,10 +1,10 @@
 import PySimpleGUI as sg
 from language import lang
 from investment import Investment
-from common_util import compare_date_str
+from common_util import compare_date_str, event_queue
 
 
-def show_new_product_window() -> str:
+def show_new_product_window():
     investment = Investment('./money.db')
 
     layout = [
@@ -54,5 +54,5 @@ def show_new_product_window() -> str:
         if event in (sg.WIN_CLOSED, 'Cancel'):  # always check for closed window
             break
 
+    event_queue.put('Refresh')
     window.close()
-    return result

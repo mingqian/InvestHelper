@@ -1,91 +1,96 @@
+import queue
 import PySimpleGUI as sg
 from language import lang
 from investment import Investment
 from ui_product import show_product_window
 from ui_new_product import show_new_product_window
 from report import generate_report
+from common_util import event_queue
 
 sg.theme('LightGrey2')
 
 
-def refresh_window(window, plist):
-    window['ProductsTable'].update(plist)
-    return None
+class MainWindow:
+    def __init__(self):
+        self.investment = Investment('money.db')
+        self.products = self.fetch_products()
+        self.plist = self.create_product_list()
+        self.window = self.create_window()
 
+    def fetch_products(self):
+        products = self.investment.fetch_products()
+        return products if products else []
 
-def get_field(item, field_str):
-    if field_str == 'code':
-        return item[0]
-    elif field_str == 'name':
-        return item[1]
+    def create_product_list(self):
+        return [[x['id'], x['name'], x['last_update']] for x in self.products if float(x['share']) > 0.0]
 
+    def create_window(self):
+        headings = [lang['Code'], lang['Name'], lang['Last Update']]
+        colwidth = [16, 40, 16]
+        layout = [
+            [sg.Input(size=(95, 1), enable_events=True, key='Filter')],
+            [sg.Table(values=self.plist, headings=headings,
+                      border_width=3, num_rows=30, col_widths=colwidth,
+                      auto_size_columns=False, justification='left',
+                      alternating_row_color='lightblue', selected_row_colors='white on blue',
+                      enable_events=True, key='ProductsTable')],
+            [sg.Button(lang['Exit'], key='Exit'), sg.Button(lang['Add'], key='Add'),
+             sg.Button(lang['Report'], key='Report'), sg.Button(lang['Refresh'], key='Refresh')]
+        ]
+        return sg.Window(lang['Home'], layout)
 
-def show_main_window():
-    investment = Investment('money.db')
-    products = investment.fetch_products()
-    if products is None:
-        plist = []
-    else:
-        plist = [[x['id'], x['name'], x['last_update']] for x in products if float(x['share']) > 0.0]
+    def refresh_window(self):
+        self.plist = self.create_product_list()
+        self.window['ProductsTable'].update(self.plist)
 
-    headings = [lang['Code'], lang['Name'], lang['Last Update']]
-    colwidth = [16, 40, 16]
-    layout = [
-        [sg.Input(size=(95, 1), enable_events=True, key='Filter')],
-        [sg.Table(values=plist, headings=headings,
-                  border_width=3,
-                  num_rows=30,
-                  col_widths=colwidth,
-                  auto_size_columns=False,
-                  justification='left',
-                  alternating_row_color='lightblue',
-                  selected_row_colors='white on blue',
-                  enable_events=True,
-                  key='ProductsTable')],
-        [sg.Button(lang['Exit'], key='Exit'), sg.Button(lang['Add'], key='Add'),
-         sg.Button(lang['Report'], key='Report'),
-         sg.Button(lang['Refresh'], key='Refresh')]
-    ]
+    def filter_products(self, search):
+        search = search.lower()
+        # code: [0],  name: [1]
+        return [x for x in self.plist if search in x[0].lower() or search in x[1].lower()]
 
-    window = sg.Window(lang['Home'], layout)
-    result = None
-
-    while True:
-        event, values = window.read()
+    def handle_event(self, event, values):
         if event in (sg.WIN_CLOSED, 'Exit'):
-            break
+            return False
 
-        if values['Filter'] != '':  # if a keystroke entered in search field
-            search = values['Filter'].lower()
-            this_plist = [x for x in plist
-                          if (search in get_field(x, 'code').lower()
-                              or search in get_field(x, 'name').lower())]
-        else:
-            # display original unfiltered list
-            this_plist = plist
-        window['ProductsTable'].update(this_plist)  # display in the listbox
+        if event == 'Filter':
+            filtered_list = self.filter_products(values['Filter']) if values['Filter'] else self.plist
+            self.window['ProductsTable'].update(filtered_list)
 
-        # if a list item is chosen
-        if event == 'ProductsTable' and len(values['ProductsTable']):
-            try:
-                product = [x for x in products
-                           if x['id'] == get_field(this_plist[values['ProductsTable'][0]], 'code')][0]
-                result = show_product_window(product)
-            except IndexError:
-                print('show_main_win: skip error')
+        if event == 'ProductsTable' and values['ProductsTable']:
+            product_id = self.plist[values['ProductsTable'][0]][0]
+            product = next((x for x in self.products if x['id'] == product_id), None)
+            if product:
+                show_product_window(product)
 
         if event == 'Add':
-            result = show_new_product_window()
+            show_new_product_window()
 
         if event == 'Report':
-            generate_report(products)
+            generate_report(self.products)
 
-        if result == 'Refresh' or event == 'Refresh':
-            products = investment.fetch_products()
-            plist = [[x['id'], x['name'], x['last_update']] for x in products if float(x['share']) > 0.0]
-            result = refresh_window(window, plist)
+        if event == 'Refresh':
+            self.products = self.fetch_products()
+            self.refresh_window()
 
-    window.close()
+        return True
+
+    def run(self):
+        while True:
+            event, values = self.window.read()
+            if not self.handle_event(event, values):
+                break
+            try:
+                event_from_queue = event_queue.get_nowait()
+                if event_from_queue == 'Refresh':
+                    self.products = self.fetch_products()
+                    self.refresh_window()
+            except queue.Empty:
+                pass
+        self.window.close()
+
+def show_main_window():
+    main_window = MainWindow()
+    main_window.run()
 
 
 show_main_window()
