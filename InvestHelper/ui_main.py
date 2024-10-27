@@ -16,6 +16,7 @@ class MainWindow:
         self.products = self.fetch_products()
         self.plist = self.create_product_list()
         self.window = self.create_window()
+        self.filtered_list = self.plist
 
     def fetch_products(self):
         products = self.investment.fetch_products()
@@ -53,11 +54,11 @@ class MainWindow:
             return False
 
         if event == 'Filter':
-            filtered_list = self.filter_products(values['Filter']) if values['Filter'] else self.plist
-            self.window['ProductsTable'].update(filtered_list)
+            self.filtered_list = self.filter_products(values['Filter']) if values['Filter'] else self.plist
+            self.window['ProductsTable'].update(self.filtered_list)
 
         if event == 'ProductsTable' and values['ProductsTable']:
-            product_id = self.plist[values['ProductsTable'][0]][0]
+            product_id = self.filtered_list[values['ProductsTable'][0]][0]
             product = next((x for x in self.products if x['id'] == product_id), None)
             if product:
                 show_product_window(product)
